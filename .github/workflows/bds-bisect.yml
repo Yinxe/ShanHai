@@ -31,9 +31,11 @@ jobs:
         run: xmake f -P ports/bds-server -m release -a x64 --game_line=26.51 -y
       - name: Build probe
         shell: pwsh
-        run: xmake build -P ports/bds-server -y karma-worldgen-probe
+        run: xmake build -P ports/bds-server -y karma-worldgen-probe karma-worldgen-probe-mem
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: probe-dll
-          path: ports/bds-server/build/windows/x64/release/karma-worldgen-probe.dll
+          path: |
+            ports/bds-server/build/windows/x64/release/karma-worldgen-probe.dll
+            ports/bds-server/build/windows/x64/release/karma-worldgen-probe-mem.dll

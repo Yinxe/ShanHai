@@ -67,3 +67,18 @@ target("karma-worldgen-probe")
     add_files("probe_host.cpp")
     add_syslinks("bcrypt")
 target_end()
+
+-- Bisection probe 2: probe 1 plus the unified allocator, so the loader accepts
+-- it. Isolates the memory operators from the terrain and structure modules.
+target("karma-worldgen-probe-mem")
+    on_load(shanhai_structure_sdk_overlay)
+    set_default(false)
+    set_kind("shared")
+    set_symbols("debug")
+    add_rules("@levibuildscript/linkrule")
+    add_packages("levilamina")
+    add_defines("NOMINMAX", "UNICODE")
+    add_cxflags("/EHa", "/utf-8", "/fp:precise", "/arch:AVX2", {tools = {"clang_cl"}})
+    add_files("probe_host.cpp", "../../src/MemoryOperators.cpp")
+    add_syslinks("bcrypt")
+target_end()
