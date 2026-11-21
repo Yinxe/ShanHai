@@ -52,3 +52,18 @@ target("bds-kernel-check")
     add_includedirs("../../src")
     add_files("../../tests/native_cli.cpp")
 target_end()
+
+-- Bisection probe: the same registration path with nothing behind it. Used to
+-- tell a loader-time crash apart from a module-time one; not shipped.
+target("karma-worldgen-probe")
+    on_load(shanhai_structure_sdk_overlay)
+    set_default(false)
+    set_kind("shared")
+    set_symbols("debug")
+    add_rules("@levibuildscript/linkrule")
+    add_packages("levilamina")
+    add_defines("NOMINMAX", "UNICODE")
+    add_cxflags("/EHa", "/utf-8", "/fp:precise", "/arch:AVX2", {tools = {"clang_cl"}})
+    add_files("probe_host.cpp")
+    add_syslinks("bcrypt")
+target_end()
