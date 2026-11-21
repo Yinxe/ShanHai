@@ -36,4 +36,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: probe-dll
-          path: build/windows/x64/release/karma-worldgen-probe.dll
+          path: ports/bds-server/build/windows/x64/release/karma-worldgen-probe.dll
