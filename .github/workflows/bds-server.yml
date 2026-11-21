@@ -65,9 +65,10 @@ jobs:
       - name: Build kernel tool
         shell: pwsh
         run: |
-          xmake f -P . -m release -a x64 -o (Join-Path $env:RUNNER_TEMP 'kernel') -y
+          $kernel = Join-Path $env:RUNNER_TEMP 'kernel'
+          xmake f -P . -m release -a x64 -o $kernel -y
           if ($LASTEXITCODE) { throw 'Kernel configuration failed' }
-          xmake build -P . -o (Join-Path $env:RUNNER_TEMP 'kernel') native-worldgen-check
+          xmake build -P . -y native-worldgen-check
           if ($LASTEXITCODE) { throw 'Kernel build failed' }
       - name: Package
         id: package
