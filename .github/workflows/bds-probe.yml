@@ -1,0 +1,40 @@
+name: BDS probe
+# Temporary feasibility probe: does the existing server-side target link on a
+# Windows runner? Removed once the BDS port builds for real.
+on:
+  workflow_dispatch:
+  push:
+    branches: [bds-server]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: windows-2025-vs2026
+    steps:
+      - uses: actions/checkout@v4
+      - uses: xmake-io/github-action-setup-xmake@3a1a5dddfc7fa625d9a698738334bf55655a861a # v1
+        with:
+          xmake-version: '3.1.1'
+          package-cache: true
+          project-path: experiments/vanilla-structure-runtime
+      - name: Install LLVM
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
+          $vs = & $vswhere -latest -products '*' -version '[18.0,19.0)' -property installationPath
+          $llvm = Join-Path $vs 'VC/Tools/Llvm/x64/bin'
+          if (!(Test-Path (Join-Path $llvm 'clang-cl.exe'))) { throw 'Visual Studio 2026 LLVM is required' }
+          $llvm | Out-File -FilePath $env:GITHUB_PATH -Append
+          & (Join-Path $llvm 'clang-cl.exe') --version
+      - name: Configure
+        shell: pwsh
+        working-directory: experiments/vanilla-structure-runtime
+        run: xmake f -m release -a x64 --game_line=26.51 -y
+      - name: Build server target
+        shell: pwsh
+        working-directory: experiments/vanilla-structure-runtime
+        run: xmake build -y vanilla-structure-lab
+      - name: Report artifact
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse -Filter *.dll build | Select-Object FullName, Length | Format-Table -AutoSize
