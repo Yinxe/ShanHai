@@ -48,7 +48,10 @@ jobs:
           if ($LASTEXITCODE) { throw 'NumPy installation failed' }
       - name: Offline checks
         shell: pwsh
-        run: python -B -X utf8 tools/check_palette_contract.py
+        run: |
+          python -B -X utf8 tools/check_palette_contract.py
+          python -B -X utf8 tools/check_release_text.py ports/bds-server/README.md
+          python -B -X utf8 ports/bds-server/test_package.py -v
       # xmake walks up to the repository root's xmake.lua, which declares no
       # game_line option; -P is required to select the port project.
       - name: Configure
@@ -57,9 +60,32 @@ jobs:
       - name: Build mod
         shell: pwsh
         run: xmake build -P ports/bds-server -y karma-worldgen-bds
-      - name: Report artifact
+      # Seed baking samples landmarks with the SDK-free kernel CLI, so the
+      # operator package must carry it alongside the DLL.
+      - name: Build kernel tool
         shell: pwsh
         run: |
-          $dll = 'ports/bds-server/build/windows/x64/release/karma-worldgen-bds.dll'
-          if (!(Test-Path $dll)) { throw "Missing $dll" }
-          Get-Item $dll | Select-Object FullName, Length | Format-Table -AutoSize
+          xmake f -P . -m release -a x64 -o (Join-Path $env:RUNNER_TEMP 'kernel') -y
+          if ($LASTEXITCODE) { throw 'Kernel configuration failed' }
+          xmake build -P . -o (Join-Path $env:RUNNER_TEMP 'kernel') native-worldgen-check
+          if ($LASTEXITCODE) { throw 'Kernel build failed' }
+      - name: Package
+        id: package
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP 'shan-hai-bds'
+          New-Item -ItemType Directory -Force $out | Out-Null
+          $kernel = Join-Path $env:RUNNER_TEMP 'kernel/windows/x64/release/native-worldgen-check.exe'
+          python -B -X utf8 ports/bds-server/package_bds.py `
+            --binary ports/bds-server/build/windows/x64/release/karma-worldgen-bds.dll `
+            --kernel-tool $kernel --output-dir $out
+          if ($LASTEXITCODE) { throw 'Packaging failed' }
+          $zip = Get-ChildItem $out -Filter *.zip | Select-Object -First 1
+          if (!$zip -or $zip.Length -eq 0) { throw 'Missing package' }
+          "name=$($zip.BaseName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "path=$($zip.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.package.outputs.name }}
+          path: ${{ steps.package.outputs.path }}
+          if-no-files-found: error
