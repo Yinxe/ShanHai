@@ -1,0 +1,65 @@
+name: BDS server build
+# Builds the dedicated-server (BDS / LeviLamina) package.
+#
+# The final link step runs LiteLDev's prelink.exe against bedrock_runtime_data,
+# which is a Windows-only tool, so this workflow is the supported build path:
+# the SDK-free kernel and all offline checks also run here, on one machine.
+on:
+  workflow_dispatch:
+  push:
+    branches: [bds-server]
+    paths:
+      - 'ports/bds-server/**'
+      - 'src/**'
+      - 'experiments/vanilla-structure-runtime/**'
+      - 'build-support/**'
+      - 'data/**'
+      - 'tools/**'
+      - '.github/workflows/bds-server.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2025-vs2026
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: xmake-io/github-action-setup-xmake@3a1a5dddfc7fa625d9a698738334bf55655a861a # v1
+        with:
+          xmake-version: '3.1.1'
+          package-cache: true
+          project-path: ports/bds-server
+      - name: Install build tools
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
+          $vs = & $vswhere -latest -products '*' -version '[18.0,19.0)' -property installationPath
+          $llvm = Join-Path $vs 'VC/Tools/Llvm/x64/bin'
+          if (!(Test-Path (Join-Path $llvm 'clang-cl.exe'))) { throw 'Visual Studio 2026 LLVM is required' }
+          $llvm | Out-File -FilePath $env:GITHUB_PATH -Append
+          & (Join-Path $llvm 'clang-cl.exe') --version
+          xmake --version
+          python -m pip install numpy
+          if ($LASTEXITCODE) { throw 'NumPy installation failed' }
+      - name: Offline checks
+        shell: pwsh
+        run: python -B -X utf8 tools/check_palette_contract.py
+      # xmake walks up to the repository root's xmake.lua, which declares no
+      # game_line option; -P is required to select the port project.
+      - name: Configure
+        shell: pwsh
+        run: xmake f -P ports/bds-server -m release -a x64 --game_line=26.51 -y
+      - name: Build mod
+        shell: pwsh
+        run: xmake build -P ports/bds-server -y karma-worldgen-bds
+      - name: Report artifact
+        shell: pwsh
+        run: |
+          $dll = 'ports/bds-server/build/windows/x64/release/karma-worldgen-bds.dll'
+          if (!(Test-Path $dll)) { throw "Missing $dll" }
+          Get-Item $dll | Select-Object FullName, Length | Format-Table -AutoSize

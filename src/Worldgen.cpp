@@ -736,6 +736,16 @@ bool Mod::disable(){
 #include "WindowsTerrainHost.inc"
 #endif
 }
-#ifndef KARMA_CLIENT
+#ifdef KARMA_BDS_HOST
+// One DLL, one ll_mod_load: the BDS host owns registration and drives both
+// modules through these adapters instead of a second entry point.
+namespace shanhai_bds {
+bool terrainLoad(){return terrain::Mod::getInstance().load();}
+bool terrainEnable(){return terrain::Mod::getInstance().enable();}
+bool terrainDisable(){return terrain::Mod::getInstance().disable();}
+bool terrainUnload(){return terrain::Mod::getInstance().unload();}
+}
+#endif
+#if !defined(KARMA_CLIENT) && !defined(KARMA_BDS_HOST)
 LL_REGISTER_MOD(terrain::Mod,terrain::Mod::getInstance());
 #endif

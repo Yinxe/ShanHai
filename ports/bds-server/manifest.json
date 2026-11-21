@@ -1,0 +1,14 @@
+{
+  "name": "mountains&seas",
+  "entry": "karma-worldgen-bds.dll",
+  "version": "0.4.0",
+  "type": "native",
+  "platform": "server",
+  "description": "mountains&seas（山&海）：Minecraft 基岩版服务端主世界地形与结构生成",
+  "author": "peakarma",
+  "conflicts": [
+    {
+      "name": "karma-worldgen-bds"
+    }
+  ]
+}
