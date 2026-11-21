@@ -13,15 +13,17 @@
 
 ## 安装
 
-1. 停服，备份 `worlds/`、`mods/`、`plugins/`。
-2. 把 ZIP 解压到 BDS 根目录，得到 `mods/mountains&seas/`。
-3. 确认 `mods/mountains&seas/manifest.json` 的 `platform` 是 `server`、`entry` 是 `karma-worldgen-bds.dll`。
+1. 停服，备份 `worlds/`、`plugins/`。
+2. 把 ZIP 解压到 BDS 根目录，得到 `plugins/mountains&seas/`。
+3. 确认 `plugins/mountains&seas/manifest.json` 的 `platform` 是 `server`、`entry` 是 `karma-worldgen-bds.dll`。
+
+模组目录必须是 `plugins/`：LeviLamina 的 `PreLoaderConfig.json` 把 `modsPath` 指向 `./plugins/`。放进 `mods/` 不会报错，但模组不会被加载——服务端会以原版方式启动，地形不生效。
 4. 准备地形数据并创建世界（见下节）。**不要**直接开一个原版世界——地形数据缺失时模组会拒绝启用并写诊断。
 
 ## 准备世界（每个种子一次）
 
 ```bat
-python -X utf8 "mods\mountains&seas\ports\bds-server\install_world.py" ^
+python -X utf8 "plugins\mountains&seas\ports\bds-server\install_world.py" ^
   --server-dir "C:\bedrock-server" ^
   --world "world" ^
   --seed 20260415
@@ -32,7 +34,7 @@ python -X utf8 "mods\mountains&seas\ports\bds-server\install_world.py" ^
 只检查、不改文件：
 
 ```bat
-python -X utf8 "mods\mountains&seas\ports\bds-server\install_world.py" ^
+python -X utf8 "plugins\mountains&seas\ports\bds-server\install_world.py" ^
   --server-dir "C:\bedrock-server" --world "world" --verify
 ```
 

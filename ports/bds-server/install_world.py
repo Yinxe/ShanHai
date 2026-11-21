@@ -42,9 +42,14 @@ def install(server_dir, seed, world_name, game_line='26.51', creative=False, for
         raise ValueError('Signed 64-bit decimal seed required')
     world = server_dir / 'worlds' / world_name
     plugin = server_dir / PLUGIN_FOLDER
-    dll = server_dir / 'mods' / 'mountains&seas' / 'karma-worldgen-bds.dll'
+    # PreLoaderConfig.json points modsPath at ./plugins/, so a mod under mods/
+    # is silently ignored and the server starts vanilla.
+    dll = server_dir / 'plugins' / 'mountains&seas' / 'karma-worldgen-bds.dll'
     if not dll.is_file():
-        raise ValueError('Install the mod folder first: ' + str(dll))
+        raise ValueError('Install the mod folder under plugins/ first: ' + str(dll))
+    stale = server_dir / 'mods' / 'mountains&seas'
+    if stale.is_dir():
+        raise ValueError('A copy exists under mods/, which LeviLamina does not load: ' + str(stale))
     if world.exists() and not force:
         raise ValueError('World already exists; terrain data is immutable per seed. '
                          'Create a new world or pass --force to overwrite plugin data only.')
