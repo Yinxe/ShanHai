@@ -26,15 +26,15 @@ jobs:
           if (!(Test-Path (Join-Path $llvm 'clang-cl.exe'))) { throw 'Visual Studio 2026 LLVM is required' }
           $llvm | Out-File -FilePath $env:GITHUB_PATH -Append
           & (Join-Path $llvm 'clang-cl.exe') --version
+      # xmake walks up to the repository root's xmake.lua, which declares no
+      # game_line option; -P is required to select the port project.
       - name: Configure
         shell: pwsh
-        working-directory: experiments/vanilla-structure-runtime
-        run: xmake f -m release -a x64 --game_line=26.51 -y
+        run: xmake f -P experiments/vanilla-structure-runtime -m release -a x64 --game_line=26.51 -y
       - name: Build server target
         shell: pwsh
-        working-directory: experiments/vanilla-structure-runtime
-        run: xmake build -y vanilla-structure-lab
+        run: xmake build -P experiments/vanilla-structure-runtime -y vanilla-structure-lab
       - name: Report artifact
         shell: pwsh
         run: |
-          Get-ChildItem -Recurse -Filter *.dll build | Select-Object FullName, Length | Format-Table -AutoSize
+          Get-ChildItem -Recurse -Filter *.dll experiments/vanilla-structure-runtime/build | Select-Object FullName, Length | Format-Table -AutoSize
