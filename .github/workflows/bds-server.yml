@@ -31,15 +31,23 @@ jobs:
           xmake-version: '3.1.1'
           package-cache: true
           project-path: ports/bds-server
-      # LeviLamina plus its SDK and prelink tooling dominate Configure time, so
-      # cache the resolved package tree rather than only the registry index.
+      # LeviLamina and its SDK dominate Configure time. Resolve the real cache
+      # root first: ${{ env.X }} reads the workflow env block, not the runner's
+      # environment, so LOCALAPPDATA has to come from the shell.
+      - name: Resolve xmake cache paths
+        id: xmake-cache
+        shell: pwsh
+        run: |
+          $global = Join-Path $env:LOCALAPPDATA '.xmake'
+          "packages=$(Join-Path $global 'packages')" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "cache=$(Join-Path $global 'cache')" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
       - name: Cache xmake packages
         uses: actions/cache@v4
         with:
           path: |
-            ${{ env.LOCALAPPDATA }}\.xmake\packages
-            ${{ env.LOCALAPPDATA }}\.xmake\cache
-          key: xmake-${{ runner.os }}-${{ hashFiles('**/xmake.lua', '**/xmake/*.lua', '**/tooth.json') }}
+            ${{ steps.xmake-cache.outputs.packages }}
+            ${{ steps.xmake-cache.outputs.cache }}
+          key: xmake-${{ runner.os }}-${{ hashFiles('xmake.lua', 'tooth.json', 'build-support/*.lua', 'ports/*/xmake.lua', 'src/kernel/xmake.lua') }}
           restore-keys: |
             xmake-${{ runner.os }}-
       - name: Install build tools
