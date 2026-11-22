@@ -8,8 +8,13 @@ name: BDS server build (manual)
 # the SDK-free kernel and all offline checks also run here, on one machine.
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish a GitHub release (tag bds-v<version>)'
+        type: boolean
+        default: false
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: windows-2025-vs2026
@@ -82,3 +87,19 @@ jobs:
           name: ${{ steps.package.outputs.name }}
           path: ${{ steps.package.outputs.path }}
           if-no-files-found: error
+      - name: Publish release
+        if: inputs.publish
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = (Get-Content -Raw ports/bds-server/manifest.json | ConvertFrom-Json).version
+          $tag = "bds-v$version"
+          gh release view $tag --repo $env:GITHUB_REPOSITORY 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag "${{ steps.package.outputs.path }}" --clobber --repo $env:GITHUB_REPOSITORY
+          } else {
+            gh release create $tag "${{ steps.package.outputs.path }}" `
+              --title "mountains&seas $version (BDS)" --generate-notes --repo $env:GITHUB_REPOSITORY
+          }
+          if ($LASTEXITCODE) { throw 'Release publication failed' }
