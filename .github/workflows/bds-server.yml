@@ -1,4 +1,4 @@
-name: BDS server build
+name: BDS server build (manual)
 # Builds the dedicated-server (BDS / LeviLamina) package. Manual only: the
 # Windows client release is the supported artifact pipeline, and the server port
 # is rebuilt on demand.
