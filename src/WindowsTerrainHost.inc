@@ -43,7 +43,7 @@ void clientRelease() {
     logTicks = 0;
     palette.clear();
     biomes.clear();
-    registryOnce = std::make_unique<std::once_flag>();
+    registryOnce() = std::make_unique<std::once_flag>();
     { std::lock_guard lock(loadMutex); loadEvents.clear(); }
     pendingLoads.clear();
 }
