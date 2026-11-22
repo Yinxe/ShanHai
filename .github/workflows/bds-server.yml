@@ -1,21 +1,13 @@
 name: BDS server build
-# Builds the dedicated-server (BDS / LeviLamina) package.
+# Builds the dedicated-server (BDS / LeviLamina) package. Manual only: the
+# Windows client release is the supported artifact pipeline, and the server port
+# is rebuilt on demand.
 #
 # The final link step runs LiteLDev's prelink.exe against bedrock_runtime_data,
 # which is a Windows-only tool, so this workflow is the supported build path:
 # the SDK-free kernel and all offline checks also run here, on one machine.
 on:
   workflow_dispatch:
-  push:
-    branches: [bds-server]
-    paths:
-      - 'ports/bds-server/**'
-      - 'src/**'
-      - 'experiments/vanilla-structure-runtime/**'
-      - 'build-support/**'
-      - 'data/**'
-      - 'tools/**'
-      - '.github/workflows/bds-server.yml'
 permissions:
   contents: read
 jobs:

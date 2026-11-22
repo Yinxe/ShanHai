@@ -17,6 +17,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <stdexcept>
 #include <string>
 
 namespace {
@@ -58,28 +59,53 @@ public:
             logger.error("此 DLL 面向 {}，当前服务端为 {}；请安装匹配的游戏线版本", SupportedGameLine, version);
             return false;
         }
-        if (!shanhai_bds::terrainLoad()) {
-            logger.error("地形模块加载失败；详见 plugins/karma-worldgen 诊断文件");
+        // terrainLoad() stops the process on a bad data identity to protect
+        // saved chunks; anything else is reported here so the operator sees it.
+        try {
+            if (!shanhai_bds::terrainLoad()) {
+                logger.error("地形模块加载失败；详见 plugins/karma-worldgen 诊断文件");
+                return false;
+            }
+        } catch (std::exception const& e) {
+            logger.error("地形模块加载异常：{}", e.what());
             return false;
         }
-        if (!shanhai_bds::structuresLoad()) {
-            // Terrain without structures is a supported configuration: a world
-            // may ship terrain data only. Report it and keep generating terrain
-            // rather than failing the whole server start.
-            logger.warn("结构模块未启用（缺少 plugins/vanilla-structure-lab/config.json 或版本不符）；地形继续运行");
+        try {
+            if (!shanhai_bds::structuresLoad()) {
+                // Terrain without structures is a supported configuration: a
+                // world may ship terrain data only. Report it and keep
+                // generating terrain rather than failing the server start.
+                logger.warn("结构模块未启用（缺少 plugins/vanilla-structure-lab/config.json 或版本不符）；地形继续运行");
+                return true;
+            }
+        } catch (std::exception const& e) {
+            logger.warn("结构模块加载异常，仅地形生效：{}", e.what());
+            return true;
         }
-        structuresReady = true;
         return true;
     }
 
     bool enable() {
         auto& logger = self.getLogger();
-        if (!shanhai_bds::terrainEnable()) {
-            logger.error("地形模块启用失败");
+        try {
+            if (!shanhai_bds::terrainEnable()) {
+                logger.error("地形模块启用失败");
+                return false;
+            }
+        } catch (std::exception const& e) {
+            logger.error("地形模块启用异常：{}", e.what());
             return false;
         }
-        if (!shanhai_bds::structuresEnable()) {
-            logger.warn("结构模块启用失败；仅地形生效");
+        // A structure failure must never take terrain down with it: the two
+        // modules are independent and terrain-only is a supported world.
+        try {
+            structuresReady = shanhai_bds::structuresEnable();
+            if (!structuresReady) logger.warn("结构模块启用失败；仅地形生效");
+        } catch (std::exception const& e) {
+            // The structure runtime installs its generator hooks before any
+            // world exists, which a dedicated server has already done by the
+            // time enable() runs. Terrain is unaffected, so keep serving.
+            logger.warn("结构模块未生效（服务端需在开服前装配钩子）：{}", e.what());
             structuresReady = false;
         }
         logger.info("mountains&seas (BDS) 已启用：地形{}, 结构{}", "开", structuresReady ? "开" : "关");

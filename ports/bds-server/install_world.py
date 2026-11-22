@@ -64,9 +64,10 @@ def install(server_dir, seed, world_name, game_line='26.51', creative=False, for
         if world.exists():
             shutil.rmtree(world)
         shutil.move(str(prepared), str(world))
-    # The structure runtime reads its own opt-in config; terrain alone is the
-    # default so a server never installs native structure hooks unasked.
-    config = plugin / 'structures' / 'config.json'
+    # The structure runtime reads its own opt-in config from its own folder and
+    # throws when the file is absent, which would fail mod enable. Write the
+    # opt-out default so terrain runs on its own unless an operator opts in.
+    config = server_dir / 'plugins' / 'vanilla-structure-lab' / 'config.json'
     if not config.exists():
         config.parent.mkdir(parents=True, exist_ok=True)
         config.write_text(json.dumps(dict(automaticStructures=False, smallFeatures=False), indent=2), 'utf-8')
