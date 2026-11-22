@@ -21,7 +21,7 @@ inline nlohmann::json contractSizes(nlohmann::json const& metadata) {
         int revision=0;auto end=version.find('.',prefix.size());
         if(end==std::string::npos)throw std::runtime_error("Malformed terrain contract version");
         auto parsed=std::from_chars(version.data()+prefix.size(),version.data()+end,revision);
-        if(parsed.ec!=std::errc{}||parsed.ptr!=version.data()+end||revision<193||revision>216)
+        if(parsed.ec!=std::errc{}||parsed.ptr!=version.data()+end||revision<193||revision>225)
             throw std::runtime_error("Terrain contract requires explicit target capabilities");
         name=revision<=195?"legacy":revision<=207?"completed":"elevated";
     }
