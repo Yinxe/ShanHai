@@ -1,0 +1,43 @@
+name: Tests
+# Regression suite, run on demand only. Kept out of the release workflows so a
+# flaky or stale case can never block publishing a package.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: windows-2025-vs2026
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: xmake-io/github-action-setup-xmake@3a1a5dddfc7fa625d9a698738334bf55655a861a # v1
+        with:
+          xmake-version: '3.1.1'
+          package-cache: true
+          project-path: ports/windows-client
+      - name: Install build tools
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
+          $vs = & $vswhere -latest -products '*' -version '[18.0,19.0)' -property installationPath
+          $llvm = Join-Path $vs 'VC/Tools/Llvm/x64/bin'
+          if (!(Test-Path (Join-Path $llvm 'clang-cl.exe'))) { throw 'Visual Studio 2026 LLVM is required' }
+          $llvm | Out-File -FilePath $env:GITHUB_PATH -Append
+          & (Join-Path $llvm 'clang-cl.exe') --version
+          python -m pip install numpy
+          if ($LASTEXITCODE) { throw 'NumPy installation failed' }
+      - name: Runtime regression checks
+        shell: pwsh
+        run: ./tests/run.ps1 -BuildDirectory (Join-Path $env:RUNNER_TEMP 'shan-hai-tests') -OutputDirectory (Join-Path $env:RUNNER_TEMP 'shan-hai-test-results')
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: ${{ runner.temp }}/shan-hai-test-results
+          if-no-files-found: ignore
