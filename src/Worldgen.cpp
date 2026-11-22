@@ -133,10 +133,30 @@ constexpr size_t MemoryChunks=1024;
 #endif
 using Session=terrain_runtime::TerrainSession<Workers,MemoryChunks>;
 constexpr size_t ChunkGateCount=Session::ChunkGateCount;
-std::shared_ptr<Session> worldSession=std::make_shared<Session>();
+// Constructed on first use, not during static initialization: a DLL that
+// allocates here runs before the host's allocator is ready, and the failure
+// happens with no log output at all.
+std::shared_ptr<Session>& sessionRef(){
+ static std::shared_ptr<Session> session=std::make_shared<Session>();
+ return session;
+}
+struct WorldSession {
+ std::shared_ptr<Session>& operator->() const {return sessionRef();}
+ operator std::shared_ptr<Session>() const {return sessionRef();}
+ void operator=(std::shared_ptr<Session> next) const {sessionRef()=std::move(next);}
+};
+WorldSession worldSession;
 // Root callbacks pin the published owner. The host replaces worldSession only
 // after its admission barrier drains; admitted calls then use that stable owner.
-std::atomic<std::shared_ptr<Session>> publishedSession{worldSession};
+std::atomic<std::shared_ptr<Session>>& publishedSessionRef(){
+ static std::atomic<std::shared_ptr<Session>> published{sessionRef()};
+ return published;
+}
+struct PublishedSession {
+ std::shared_ptr<Session> load() const {return publishedSessionRef().load();}
+ void store(std::shared_ptr<Session> const& next) const {publishedSessionRef().store(next);}
+};
+PublishedSession publishedSession;
 bool unboundedWorld=false;
 terrain_runtime::WorldGenerationMode generationMode;
 terrain_runtime::BuildHeight buildHeight;
@@ -146,7 +166,12 @@ std::atomic<DWORD> mainThread=0;
 std::vector<Block const*> palette;
 Block const* coveredSnow=nullptr;
 std::vector<Biome const*> biomes;
-std::unique_ptr<std::once_flag> registryOnce=std::make_unique<std::once_flag>();
+// A once_flag cannot be reset, so the owner stays a pointer; it is only
+// allocated on first use so nothing allocates during static initialization.
+std::unique_ptr<std::once_flag>& registryOnce(){
+ static std::unique_ptr<std::once_flag> once=std::make_unique<std::once_flag>();
+ return once;
+}
 Json metadata,activation;
 std::string worldName;
 std::atomic_uint generated=0,errors=0;
@@ -354,7 +379,7 @@ std::shared_ptr<Chunk const> getChunk(int x,int z){
  TerminateProcess(GetCurrentProcess(),70);std::terminate();
 }
 void resolveRegistry(Dimension& dim){
- std::call_once(*registryOnce,[&]{
+ std::call_once(*registryOnce(),[&]{
   palette.clear();biomes.clear();coveredSnow=nullptr;
   if(metadata.at("palette").size()>65536)throw std::runtime_error("Palette exceeds uint16");
   for(auto const& entry:metadata.at("palette")){
@@ -736,6 +761,16 @@ bool Mod::disable(){
 #include "WindowsTerrainHost.inc"
 #endif
 }
-#ifndef KARMA_CLIENT
+#ifdef KARMA_BDS_HOST
+// One DLL, one ll_mod_load: the BDS host owns registration and drives both
+// modules through these adapters instead of a second entry point.
+namespace shanhai_bds {
+bool terrainLoad(){return terrain::Mod::getInstance().load();}
+bool terrainEnable(){return terrain::Mod::getInstance().enable();}
+bool terrainDisable(){return terrain::Mod::getInstance().disable();}
+bool terrainUnload(){return terrain::Mod::getInstance().unload();}
+}
+#endif
+#if !defined(KARMA_CLIENT) && !defined(KARMA_BDS_HOST)
 LL_REGISTER_MOD(terrain::Mod,terrain::Mod::getInstance());
 #endif

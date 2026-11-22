@@ -700,9 +700,18 @@ class Mod {
         return m;
     }
     bool load() {
-        std::ofstream(folder / "runtime-version.txt") << ll::getGameVersion().to_string();
-        return std::filesystem::exists(folder / "config.json") &&
-               ll::getGameVersion().to_string() == "1.26.20+1f6d1b1";
+        auto const version = ll::getGameVersion().to_string();
+        std::ofstream(folder / "runtime-version.txt") << version;
+        if (!std::filesystem::exists(folder / "config.json")) return false;
+        // The structure rules are pinned to a game line, not to one build
+        // suffix: BDS and the Windows client carry different build hashes for
+        // the same ABI, and every 1.26.51 patch keeps these native layouts.
+        auto const line = version.substr(0, version.find_first_of(".+-", version.find('.', version.find('.') + 1)));
+#ifdef SHANHAI_MC_26_51
+        return line == "1.26.51";
+#else
+        return line == "1.26.20";
+#endif
     }
     bool enable() {
         terrain_runtime::HookTransaction hooks;
@@ -1948,6 +1957,14 @@ class Mod {
 #include "WindowsStructureHost.inc"
 #endif
 } // namespace lab
-#ifndef KARMA_CLIENT
+#ifdef KARMA_BDS_HOST
+namespace shanhai_bds {
+bool structuresLoad() { return lab::Mod::getInstance().load(); }
+bool structuresEnable() { return lab::Mod::getInstance().enable(); }
+bool structuresDisable() { return lab::Mod::getInstance().disable(); }
+bool structuresUnload() { return lab::Mod::getInstance().unload(); }
+}
+#endif
+#if !defined(KARMA_CLIENT) && !defined(KARMA_BDS_HOST)
 LL_REGISTER_MOD(lab::Mod, lab::Mod::getInstance());
 #endif
