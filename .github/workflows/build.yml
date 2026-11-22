@@ -25,6 +25,17 @@ jobs:
           xmake-version: '3.1.1'
           package-cache: true
           project-path: ports/windows-client
+      # LeviLamina plus its SDK and prelink tooling dominate Configure time, so
+      # cache the resolved package tree rather than only the registry index.
+      - name: Cache xmake packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.LOCALAPPDATA }}\.xmake\packages
+            ${{ env.LOCALAPPDATA }}\.xmake\cache
+          key: xmake-${{ runner.os }}-${{ hashFiles('**/xmake.lua', '**/xmake/*.lua', '**/tooth.json') }}
+          restore-keys: |
+            xmake-${{ runner.os }}-
       - name: Install build tools
         shell: pwsh
         run: |
