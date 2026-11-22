@@ -10,7 +10,7 @@ struct ElevationVariantsTest {
   data["config"]["elevationRevision"]=2;data["config"]["smallPoolsVersion"]=3;
   data["config"]["seaLevel"]=100;data["config"]["generatedMaxYExclusive"]=512;
   Engine engine(data);auto&f=engine.field;
-  Field::BasinSite basin{true,1000,2000,450,390,75,135};
+  Field::BasinSite basin{true,false,1000,2000,450,390,75,135};
   double lo=10,hi=0;
   for(int i=0;i<64;++i){double a=i*6.283185307179586/64;
    double q=f.basinRadius(basin,1000+450*std::cos(a),2000+390*std::sin(a));lo=std::min(lo,q);hi=std::max(hi,q);
