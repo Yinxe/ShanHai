@@ -133,9 +133,12 @@ constexpr size_t MemoryChunks=1024;
 #endif
 using Session=terrain_runtime::TerrainSession<Workers,MemoryChunks>;
 constexpr size_t ChunkGateCount=Session::ChunkGateCount;
-// Constructed on first use, not during static initialization: a DLL that
-// allocates here runs before the host's allocator is ready, and the failure
-// happens with no log output at all.
+// A dedicated server loads this DLL before the host allocator exists, so the
+// session cannot be built during static initialization: allocating there kills
+// the process with no log output at all. The client is injected into a running
+// process where the allocator is ready, and its chunk path reads the session on
+// every request, so it keeps the direct object.
+#ifdef KARMA_BDS_HOST
 std::shared_ptr<Session>& sessionRef(){
  static std::shared_ptr<Session> session=std::make_shared<Session>();
  return session;
@@ -157,6 +160,12 @@ struct PublishedSession {
  void store(std::shared_ptr<Session> const& next) const {publishedSessionRef().store(next);}
 };
 PublishedSession publishedSession;
+#else
+std::shared_ptr<Session> worldSession=std::make_shared<Session>();
+// Root callbacks pin the published owner. The host replaces worldSession only
+// after its admission barrier drains; admitted calls then use that stable owner.
+std::atomic<std::shared_ptr<Session>> publishedSession{worldSession};
+#endif
 bool unboundedWorld=false;
 terrain_runtime::WorldGenerationMode generationMode;
 terrain_runtime::BuildHeight buildHeight;
@@ -166,8 +175,9 @@ std::atomic<DWORD> mainThread=0;
 std::vector<Block const*> palette;
 Block const* coveredSnow=nullptr;
 std::vector<Biome const*> biomes;
-// A once_flag cannot be reset, so the owner stays a pointer; it is only
-// allocated on first use so nothing allocates during static initialization.
+// A once_flag cannot be reset, so the owner stays a pointer, and it is created
+// on first use: a dedicated server must not allocate during static
+// initialization (see sessionRef above). One accessor serves both hosts.
 std::unique_ptr<std::once_flag>& registryOnce(){
  static std::unique_ptr<std::once_flag> once=std::make_unique<std::once_flag>();
  return once;
