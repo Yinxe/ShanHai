@@ -335,7 +335,32 @@
       "publicProfile": "shared-windows-android-v1",
       "villageSizeClasses": true
     },
-    "completedBiomes": 1
+    "completedBiomes": 1,
+    "voidRegions": {
+      "enabled": true,
+      "ancientRift": {
+        "enabled": true,
+        "grid": 6144,
+        "chance": 0.55,
+        "radiusMin": 420,
+        "radiusMax": 760,
+        "floorDepth": 12,
+        "rimMargin": 24
+      },
+      "skyIslands": {
+        "enabled": true,
+        "grid": 5120,
+        "chance": 0.5,
+        "radiusMin": 340,
+        "radiusMax": 620,
+        "islandGrid": 176,
+        "islandChance": 0.8,
+        "islandMinRadius": 30,
+        "islandMaxRadius": 86,
+        "islandMinTop": 300,
+        "islandMaxTop": 450
+      }
+    }
   },
   "functions": {
     "minecraft:overworld/temperature": {

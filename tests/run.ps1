@@ -33,6 +33,7 @@ $cases = @(
     @{Name='landform_refresh'; Args=@((Join-Path $output 'inputs/positive.json'))},
     @{Name='elevation_profile'; Args=@()},
     @{Name='elevation_variants'; Args=@((Join-Path $output 'inputs/positive.json'))},
+    @{Name='void_landforms'; Args=@((Join-Path $output 'void-landforms.json'))},
     @{Name='world_tasks'; Args=@()},
     @{Name='terrain_session'; Args=@((Join-Path $output 'inputs/positive.json'),(Join-Path $output 'terrain-session'))},
     @{Name='kernel_facade'; Args=@((Join-Path $output 'inputs/positive.json'))},

@@ -5,6 +5,8 @@ int biomeSearchGrid(int biome)const{
  if(biome==61||biome==-5)return basinGrid();
  if(biome==-1||biome==-2)return 4608;
  if(biome==-3)return int(volcanoGrid);
+ if(biome==-6)return int(riftGrid);
+ if(biome==-7)return int(skyGrid);
  return 0;
 }
 std::vector<std::array<int,2>> biomeSearchAnchors(int biome,int gx,int gz){
@@ -19,6 +21,10 @@ std::vector<std::array<int,2>> biomeSearchAnchors(int biome,int gx,int gz){
    for(int k=0;k<8;++k){double t=k*.7853981634;add(a.x+std::cos(t)*a.rx*q,a.z+std::sin(t)*a.rz*q);}
  }}else if(biome==-3){auto a=volcanoRegion(gx,gz);if(a.valid){
   add(a.cone.x,a.cone.z);for(int k=0;k<8;++k){double t=k*.7853981634;add(a.cone.x+std::cos(t)*a.inner*.5,a.cone.z+std::sin(t)*a.inner*.5);}
+ }}else if(biome==-6){auto a=riftRegion(gx,gz);if(a.valid){
+  add(a.x,a.z);for(double q:{.25,.55})for(int k=0;k<8;++k){double t=k*.7853981634;add(a.x+std::cos(t)*a.rx*q,a.z+std::sin(t)*a.rz*q);}
+ }}else if(biome==-7){auto a=skyRegion(gx,gz);if(a.valid){
+  add(a.x,a.z);for(double q:{.0,.45})for(int k=0;k<8;++k){double t=k*.7853981634;add(a.x+std::cos(t)*a.rx*q,a.z+std::sin(t)*a.rz*q);}
  }}
  return out;
 }

@@ -37,6 +37,12 @@ def prepare(output):
   data['regionalGeneration']['algorithm']='regional-drainage-v2'
   data['rivers']['algorithm']='regional-drainage-v2'
   path.write_text(json.dumps(data,separators=(',',':')),'utf-8')
+ # Void landforms need the expanded height profile and their own opt-in flag.
+ void=json.loads((ROOT/'data/seed-template.json').read_bytes())['config']['voidRegions']
+ expanded=json.loads((output/'positive.json').read_bytes())
+ expanded['config'].update(seaLevel=100,maxY=511,generatedMaxYExclusive=512,mountainPeakY=480,
+                           elevationRevision=2,landscapeRevision=3,voidRevision=1,voidRegions=void)
+ (output/'void-landforms.json').write_text(json.dumps(expanded,separators=(',',':')),'utf-8')
 if __name__=='__main__':
  parser=argparse.ArgumentParser();parser.add_argument('--output',required=True,type=Path)
  prepare(parser.parse_args().output)

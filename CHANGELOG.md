@@ -1,3 +1,13 @@
+## 0.4.1 — unreleased
+
+Adds two opt-in landform families, both gated by `voidRevision=1` so existing worlds keep their saved terrain unchanged.
+
+**Ancient rifts.** A closed inland chasm whose floor sits 12 blocks below sea level while the rim keeps its shaped height; the whole drop happens inside one narrow radial band, so no ring-shaped plateau or leftover terrain island appears. The floor is forced warm and humid regardless of regional climate and carries its own ancient ecology: moss terraces, mud banks, clay subsoil, a shallow below-sea-level lake, ferns and tall grass, old-growth trunks with flattened crowns, and vines on the chasm wall. Floors stay closed basins, so hydrology never treats that water as a marine sink.
+
+**Sky archipelago.** A separate region whose entire column is void: no stone, no cave, no aquifer and no bedrock — Y=-64 is air. Platforms are lens-shaped with a deepslate keel, stone shell and grass cap, top between Y300 and Y450, and only the interval `[bottom, top]` is ever filled. A final sweep restores the invariant after every other pass, so no decoration can leave rock or snow hanging below an island.
+
+Both landforms use the existing landform identity mechanism (`peakarma:` catalogue entries with `biome<0`) instead of registering new engine biomes, so the frozen palette and `biomeNames` contract are untouched. `/locate biome` gains `peakarma:ancient_rift` and `peakarma:sky_islands` with authoritative region anchors.
+
 ## 0.4.0 — 2026-11-04
 
 The latest changes target Windows **1.26.51.01 / LL 26.51.9**, kernel **2.225**. The retained Windows 26.20 package remains kernel 2.219; BDS is unchanged by this revision.
