@@ -316,6 +316,11 @@ for(auto const&s:ss){if(field.surface(s.x,s.z,false).glacier>.15)continue;int x=
   int lo=std::clamp(s.voidBottom-12+64,0,Height),hi=std::clamp(s.voidTop+44+64,0,Height-1);
   std::fill(col,col+lo,uint16_t(0));
   std::fill(col+hi+1,col+Height,uint16_t(0));
+  // The cap itself must never be air. A later fluid or snow pass can clear the
+  // single top cell (a pond write that lost its water, a snow-support cleanup),
+  // which left a one-block hole in an otherwise solid island. Restore the cap
+  // material directly instead of relying on which pass ran last.
+  if(int cap=s.voidTop+64;cap>=lo&&cap<=hi&&col[cap]==0)col[cap]=4;
  }
  featureMs=std::chrono::duration<double,std::milli>(clock()-chunkBegin).count()-surfaceMs-columnMs;
  for(int col=0;col<256;col++){size_t start=out.size();out.push_back(0);out.push_back(0);int count=0;auto a=raw.data()+col*Height;for(int y=0;y<Height;){int end=y+1;while(end<Height&&a[end]==a[y])end++;int n=end-y;out.push_back(uint8_t(n));out.push_back(uint8_t(n>>8));out.push_back(uint8_t(a[y]));out.push_back(uint8_t(a[y]>>8));y=end;count++;}out[start]=uint8_t(count);out[start+1]=uint8_t(count>>8);}terrain_snow::append(out,snowPlants);return out;
