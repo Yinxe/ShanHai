@@ -11,7 +11,9 @@ def height_settings(data):
     data["config"].update(seaLevel=100,maxY=511,generatedMaxYExclusive=512,mountainPeakY=480,elevationRevision=2,landscapeRevision=3)
     data["config"]["stoneForest"]["valleyY"]=110
 
-def finish_recipe(data,target_game=None):
+VOID_REGIONS=json.loads((P/'data/seed-template.json').read_bytes())["config"]["voidRegions"]
+
+def finish_recipe(data,target_game=None,void=False):
     height_settings(data)
     data["config"]["badlandsRegions"]=3
     data["config"]["riverBankSurvey"]=1
@@ -37,8 +39,14 @@ def finish_recipe(data,target_game=None):
     data['seedManifest'].update(ready=True,riversReady=True,generationMode='regional-on-demand',
                                 completeSeedBake=False)
     if target_game is not None:enable_forests(data,target_game)
+    if void:
+        # Opt-in landform family. The template already carries the tuned
+        # distribution; only the recipe revision is added here so a world
+        # without this flag keeps its previous terrain exactly.
+        data["config"]["voidRevision"]=1
+        data["config"]["voidRegions"]=deepcopy(VOID_REGIONS)
 
-def build(seed,output,status=None,native_tool=None,target_game="26.20"):
+def build(seed,output,status=None,native_tool=None,target_game="26.20",void=False):
     if str(int(seed))!=seed or not -(1<<63)<=int(seed)<(1<<63):raise ValueError('Signed 64-bit seed required')
     output=Path(output);output.parent.mkdir(parents=True,exist_ok=True)
     progress=ProgressReporter(status);progress.stage(0,.65,'正在建立种子与区域生成规则')
@@ -59,11 +67,11 @@ def build(seed,output,status=None,native_tool=None,target_game="26.20"):
         if usable(group[0]) and sum(map(usable,group))>=7:chosen=center;break
     data['seedManifest']['forestHabitatFound']=chosen is not None
     chosen=chosen or candidates[0];data['config']['giantForest'].update(centerX=chosen[0],centerZ=chosen[1])
-    finish_recipe(data,target_game)
+    finish_recipe(data,target_game,void)
     output.write_text(json.dumps(data,separators=(',',':')),'utf-8');scratch.unlink()
     progress.update('区域生成规则已准备',1.)
     return dict(seed=seed,generationMode='regional-on-demand',wholeWorldSamples=0)
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--seed',required=True);p.add_argument('--output',required=True,type=Path);p.add_argument('--status',type=Path);p.add_argument('--target-game',choices=['26.20','26.51'],default='26.20');a=p.parse_args()
-    print(json.dumps(build(a.seed,a.output,a.status,target_game=a.target_game)))
+    p=argparse.ArgumentParser();p.add_argument('--seed',required=True);p.add_argument('--output',required=True,type=Path);p.add_argument('--status',type=Path);p.add_argument('--target-game',choices=['26.20','26.51'],default='26.20');p.add_argument('--void',action='store_true',help='Enable ancient rifts and sky islands');a=p.parse_args()
+    print(json.dumps(build(a.seed,a.output,a.status,target_game=a.target_game,void=a.void)))

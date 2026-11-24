@@ -307,9 +307,13 @@ for(auto const&s:ss){if(field.surface(s.x,s.z,false).glacier>.15)continue;int x=
   auto const&s=surfaces[i];if(!s.voidVoid)continue;
   auto col=raw.data()+i*Height;
   if(!s.voidPlatform){std::fill(col,col+Height,uint16_t(0));continue;}
-  // Keep the platform body plus its bounded decoration band: a trunk, a flat
-  // crown and rim vines all live within 32 blocks of the top.
-  int lo=std::clamp(s.voidBottom+64,0,Height),hi=std::clamp(s.voidTop+32+64,0,Height-1);
+  // Keep the platform body plus its bounded decoration band. A trunk plus a
+  // two-tier crown plus rim roots/vines can reach ~40 blocks above the cap, so
+  // the band must cover that or a tall island tree is clipped in half.
+  // The keel keeps a bounded underside band for hanging roots and vines, and
+  // the cap keeps a bounded upper band for trunks and crowns. Everything
+  // outside those two bands is air: that is what makes an island float.
+  int lo=std::clamp(s.voidBottom-12+64,0,Height),hi=std::clamp(s.voidTop+44+64,0,Height-1);
   std::fill(col,col+lo,uint16_t(0));
   std::fill(col+hi+1,col+Height,uint16_t(0));
  }

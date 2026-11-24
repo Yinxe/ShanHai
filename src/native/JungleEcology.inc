@@ -6,7 +6,9 @@ Cache<uint64_t,JungleSite> jungleSites{2048};
 // Shape construction ignores native reservations; apply those at placement.
 std::shared_ptr<JungleShapes> jungleShapes;
 bool jungleHabitat(Surface const&s)const{
- return s.biome==13&&s.giant<.01&&s.stone<.01&&s.barren<.01&&!s.kind&&!s.lake&&!s.river&&s.cliffLow==-32768&&s.height>33&&field.ecologyHeight(s)<235&&field.ecologyTreeWeight(s)>0;
+ // An ancient rift floor is its own habitat: the standard jungle pass must not
+ // plant a second stand inside the old-growth chasm.
+ return s.biome==13&&!s.voidFloor&&s.giant<.01&&s.stone<.01&&s.barren<.01&&!s.kind&&!s.lake&&!s.river&&s.cliffLow==-32768&&s.height>33&&field.ecologyHeight(s)<235&&field.ecologyTreeWeight(s)>0;
 }
 double junglePatch(int x,int z)const{return clamp(.58+.65*forestNoise.at(x/83.,z/83.)+.22*understoryNoise.at(x/29.,z/29.),0.,1.);}
 JungleSite jungleSite(int gx,int gz){return jungleSites.get(key2(gx,gz),[&]{

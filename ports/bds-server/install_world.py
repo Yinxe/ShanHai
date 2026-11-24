@@ -18,7 +18,7 @@ from prepare_world import prepare, sha, PLUGIN_FOLDER
 from forest_profile import TARGETS
 
 
-def build_seed(seed, output, status, game_line):
+def build_seed(seed, output, status, game_line, void=False):
     """Bake one immutable seed package with the shipped seed tools."""
     env = os.environ.copy()
     env.pop('PYTHONHOME', None)
@@ -30,11 +30,12 @@ def build_seed(seed, output, status, game_line):
     env['OMP_NUM_THREADS'] = '1'
     subprocess.run([sys.executable, '-X', 'utf8', str(P / 'tools/build_streaming_seed.py'),
                     '--seed', seed, '--output', str(output),
-                    '--status', str(status), '--target-game', game_line],
+                    '--status', str(status), '--target-game', game_line]
+                   + (['--void'] if void else []),
                    cwd=P, env=env, check=True, timeout=3600)
 
 
-def install(server_dir, seed, world_name, game_line='26.51', creative=False, force=False):
+def install(server_dir, seed, world_name, game_line='26.51', creative=False, force=False, void=False):
     server_dir = Path(server_dir).resolve()
     if game_line not in TARGETS:
         raise ValueError('Unsupported game line')
@@ -57,7 +58,7 @@ def install(server_dir, seed, world_name, game_line='26.51', creative=False, for
     with tempfile.TemporaryDirectory(prefix='.karma-seed-', dir=server_dir) as staging:
         source = Path(staging) / 'native-input.json'
         status = Path(staging) / 'status.json'
-        build_seed(seed, source, status, game_line)
+        build_seed(seed, source, status, game_line, void)
         prepared = Path(staging) / 'world'
         result = prepare(source, P / 'tests/fixtures/void-world/level.dat', prepared,
                          world_name, plugin, creative=creative)
@@ -109,11 +110,12 @@ if __name__ == '__main__':
     p.add_argument('--creative', action='store_true')
     p.add_argument('--force', action='store_true', help='Replace an existing world')
     p.add_argument('--verify', action='store_true', help='Read-only identity check')
+    p.add_argument('--void', action='store_true', help='Enable ancient rifts and sky islands')
     a = p.parse_args()
     if a.verify:
         print(json.dumps(verify(a.server_dir, a.world), ensure_ascii=False, indent=2))
     else:
         if not a.seed:
             p.error('--seed is required when installing')
-        print(json.dumps(install(a.server_dir, a.seed, a.world, a.game_line, a.creative, a.force),
+        print(json.dumps(install(a.server_dir, a.seed, a.world, a.game_line, a.creative, a.force, a.void),
                          ensure_ascii=False, indent=2))
