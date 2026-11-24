@@ -68,3 +68,40 @@ Neither landform registers a new engine biome. They reuse the existing landform 
 - Island plans sample a 3×3 lattice of cells per column, cached by the column's own cell key.
 - A void column costs one branch in `material()`; platform columns additionally write only their `[bottom, top]` interval.
 - Recipe validation rejects overlapping lattices, a rim margin below 8, `islandMaxRadius*2 > islandGrid`, floors above sea level and island tops outside the generated height.
+
+## Ecology detail
+
+The first pass produced a bare pole with a flattened ball, and the sky platforms
+were undecorated lenses. Both now use the layered silhouettes the other biomes
+already carry.
+
+### Ancient rift old growth
+
+Three silhouettes — emergent canopy, leaning buttress, hollow elder — with six
+buttress roots, a 3x3 tapering trunk that keeps oriented bark on its core (so a
+cut top shows rings), three limbs reaching into offset sub-crowns, a top tuft,
+hanging vines from the outer crown ring, and moss on the root plate.
+
+The floor is a rainforest floor, not a lawn: moss replaces the soil cap, ferns
+dominate, azalea patches carry the flowering variant, clay lenses sit in the
+wettest hollows, cave-vine curtains with berry tips and spore blossoms hang under
+the rim, and glow lichen lines the overhang. The below-sea-level lake gets a mud
+ring, reeds and lilies.
+
+The standard jungle pass now yields the rift floor to the old-growth stand, so
+two forests are never planted inside the same chasm.
+
+### Sky islands
+
+The cap is never empty: ground cover and cap material are chosen independently,
+so a column cannot fall through every branch. Islands carry fern, grass, flowers
+and coarse-dirt patches, shallow ponds whose lip is verified against a full 3x3
+platform footprint, azalea pockets, and hanging roots and vines below the keel.
+
+### Two decoration bands
+
+The final void sweep keeps two bounded bands: 12 blocks below the keel for
+hanging roots and vines, and 44 above the cap for trunks and crowns. Everything
+outside them is air. A one-block hole in a cap (a pond write that lost its water,
+a snow-support cleanup) is restored directly by that sweep rather than left to
+whichever pass ran last.
